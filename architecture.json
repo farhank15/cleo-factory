@@ -1,6 +1,3 @@
-# Tablekeeper Dark Factory — Architecture Plan
-
-```arch
 {
   "kind": "layered",
   "title": "Tablekeeper Dark Factory — Service Architecture",
@@ -70,15 +67,3 @@
     { "from": "http", "to": "runtime", "label": "listen on PORT" }
   ]
 }
-```
-
-## Factory Stages
-
-- [x] Stage 1: Specification Ledger & Concurrency Engine — auth, availability, reservations, atomic moves, export/import, seed reset, container.
-- [ ] Stage 2: Browser UI & combined tables — search/booking/lookup screens, combinable table pairs.
-- [ ] Stage 3: Booking policies, history and recurring reservations — dated policies, accepted terms, revision, reservation history, series.
-- [ ] Stage 4: Seating changes and recurring amendments — closure replans with optimization, series amendments.
-
-## Seat Chain (per stage)
-
-`cleo-architect` (CONTRACT_LEDGER) -> `cleo-forge` (build) -> `cleo-sentinel` (adversarial QA, circuit breaker x3) -> `cleo-release` (container cert) -> `cleo-prime` (acceptance tag + hard stop).
