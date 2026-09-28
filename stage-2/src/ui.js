@@ -503,6 +503,7 @@ const JS = String.raw`(function() {
   }
 
   function showLookupError(message) {
+    removeEl('[data-testid="reservation-detail"]');
     let el = document.querySelector('[data-testid="reservation-error"]');
     if (!el) {
       el = document.createElement('div');
