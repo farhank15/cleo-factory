@@ -533,4 +533,10 @@ function makeApp(state) {
   }
 }
 
+if (require.main === module) {
+  const port = parseInt(process.env.PORT || '8080', 10);
+  const app = makeApp();
+  app.server.listen(port, '0.0.0.0', () => process.stdout.write(`listening on ${port}\n`));
+}
+
 module.exports = { makeApp, State, ValidationError };

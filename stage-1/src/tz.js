@@ -30,13 +30,17 @@ function partsFor(instant, tz) {
 }
 
 // Offset (in minutes, + = east of UTC) of `tz` at absolute instant `instant`.
-// Derived from wall parts vs. the instant so it never depends on the
-// `timeZoneName` token shape ("GMT+02:00" vs "+02:00" vs named zones), which
-// is not portable across ICU builds.
+// Both the zone wall and the UTC wall are reduced to a whole-second UTC
+// millisecond stamp before differencing, so the result is always a whole number
+// of minutes and is never polluted by the instant's sub-second milliseconds
+// (which would otherwise show up as a spurious fractional offset like "-00:00").
 function offsetAt(instant, tz) {
   const o = partsFor(instant, tz);
   const wallMs = Date.UTC(+o.year, +o.month - 1, +o.day, +o.hour, +o.minute, +o.second);
-  return (wallMs - instant) / 60000;
+  const d = new Date(instant);
+  const utcMs = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(),
+    d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds());
+  return (wallMs - utcMs) / 60000;
 }
 
 function wallParts(instant, tz) {
