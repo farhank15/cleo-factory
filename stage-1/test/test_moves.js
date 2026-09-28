@@ -112,15 +112,14 @@ test('POST /reservation-moves: conflict causes all to fail (all-or-nothing)', as
       })
     });
 
-    // Try to move r1 to 10:30 (overlaps with r2 at 10:30) and r2 to 10:30 (overlaps with r1)
-    // This should fail because r1 move to 10:30 conflicts with r2 at 10:00-11:30
+    // Try to move r1 to 10:30 (t1) and r2 to 10:30 on t1 (from t2) -> both on same table = conflict
     const res = await request(port, '/reservation-moves', {
       method: 'POST',
       headers: { ...authHeaders(token), 'Idempotency-Key': 'm-h' },
       body: JSON.stringify({
         moves: [
           { reference: r1.json().reference, starts_at_local: `${DATE}T10:30` },
-          { reference: r2.json().reference, starts_at_local: `${DATE}T10:30` }
+          { reference: r2.json().reference, starts_at_local: `${DATE}T10:30`, table_id: 't1' }
         ]
       })
     });

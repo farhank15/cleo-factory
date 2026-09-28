@@ -7,7 +7,7 @@ const {
   resetState, login, authHeaders, FIXTURE
 } = require('./helper');
 
-const DATE = '2026-03-23';
+const DATE = '2026-10-12';
 
 test('50-way concurrency: same slot, exactly one wins, rest get 409', async () => {
   const { server } = createServer();
@@ -91,7 +91,8 @@ test('50-way concurrency: all 5xx-free across different slots', async () => {
     const loginRes = await login(port, 'ada@example.com', 'correct horse');
     const token = loginRes.json().token;
 
-    const slots = ['10:00', '10:30', '11:00', '11:30', '12:00'];
+    // r_ny has 60-min duration, use hourly slots (non-overlapping)
+    const slots = ['10:00', '11:00', '12:00', '13:00', '14:00'];
     const requests = [];
     for (let i = 0; i < 50; i++) {
       const slot = slots[i % slots.length];

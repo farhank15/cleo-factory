@@ -24,7 +24,7 @@ test('POST /reservations creates reservation (201)', async () => {
     const token = await setupAuth(port, FIXTURE, 'ada@example.com', 'correct horse');
     const res = await request(port, '/reservations', {
       method: 'POST',
-      headers: authHeaders(token),
+      headers: { ...authHeaders(token), 'Idempotency-Key': 'create-1' },
       body: JSON.stringify({
         restaurant_id: 'r_anker',
         table_id: 't1',
@@ -465,17 +465,18 @@ test('PATCH /reservations/{reference} to unavailable table returns 409', async (
     });
     const ref = res1.json().reference;
 
-    // Another booking at 11:00
-    await request(port, '/reservations', {
+    // Another booking at 12:00 (10:00-11:30 and 12:00-13:30 don't overlap)
+    const r2 = await request(port, '/reservations', {
       method: 'POST',
       headers: { ...authHeaders(token), 'Idempotency-Key': 'k-l' },
       body: JSON.stringify({
         restaurant_id: 'r_anker', table_id: 't1',
-        starts_at_local: `${DATE}T11:00`, party_size: 4
+        starts_at_local: `${DATE}T12:00`, party_size: 4
       })
     });
+    assert.equal(r2.status, 201);
 
-    // Try to move first reservation to 11:00 -> conflict
+    // Try to move first reservation to 12:00 -> conflict with r2
     const res = await request(port, `/reservations/${ref}`, {
       method: 'PATCH',
       headers: authHeaders(token),
