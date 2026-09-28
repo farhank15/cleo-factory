@@ -9,6 +9,11 @@ const HHMM_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 const WEEKDAYS = new Set(['mon','tue','wed','thu','fri','sat','sun']);
 const LOCAL_RE = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/;
 
+function validTimezone(tz) {
+  if (tz === 'UTC') return true;
+  return Intl.supportedValuesOf('timeZone').includes(tz);
+}
+
 function isPlainObject(v) {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
 }
@@ -31,7 +36,7 @@ class ValidationError extends Error {
 function validateRestaurant(r) {
   if (!isPlainObject(r) || !validId(r.id)) return new ValidationError('validation_failed');
   if (typeof r.name !== 'string' || !r.name) return new ValidationError('validation_failed');
-  if (!r.timezone || !Intl.supportedValuesOf('timeZone').includes(r.timezone)) return new ValidationError('validation_failed');
+  if (!r.timezone || !validTimezone(r.timezone)) return new ValidationError('validation_failed');
   if (!validInt(r.slot_minutes, 1, 1440)) return new ValidationError('validation_failed');
   if (!validInt(r.reservation_duration_minutes, 1, 1440)) return new ValidationError('validation_failed');
   if (typeof r.cancellation_cutoff_minutes !== 'number' ||
@@ -266,7 +271,8 @@ class State {
     }
     const idem = [];
     for (const [key, rec] of this.idem.entries()) idem.push({ key, body: rec.body, status: rec.status, response: rec.response });
-    return { track: 'tablekeeper', format_version: 1, state: { users, tokens, restaurants, reservations, idem } };
+    const used_references = [...this.references];
+    return { track: 'tablekeeper', format_version: 1, state: { users, tokens, restaurants, reservations, used_references, idem } };
   }
 
   importState(obj) {

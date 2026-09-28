@@ -14,7 +14,7 @@ async function setupAuth(port, fixture, email, password) {
   return res.json().token;
 }
 
-const DATE = '2026-03-23';
+const DATE = '2026-10-12';
 
 test('POST /reservations creates reservation (201)', async () => {
   const { server } = createServer();
@@ -174,7 +174,7 @@ test('POST /reservations: unknown restaurant returns 404', async () => {
     const token = await setupAuth(port, FIXTURE, 'ada@example.com', 'correct horse');
     const res = await request(port, '/reservations', {
       method: 'POST',
-      headers: { ...authHeaders(token), 'Idempotency-Key': 'key-4' },
+      headers: { ...authHeaders(token), 'Idempotency-Key': 'create-1' },
       body: JSON.stringify({
         restaurant_id: 'unknown', table_id: 't1',
         starts_at_local: `${DATE}T10:00`, party_size: 2

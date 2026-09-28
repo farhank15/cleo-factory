@@ -7,7 +7,7 @@ const {
   resetState, login, authHeaders, FIXTURE
 } = require('./helper');
 
-const DATE = '2026-03-23';
+const DATE = '2026-10-12';
 
 async function setupAuth(port, email, password) {
   await resetState(port, FIXTURE);
@@ -144,20 +144,35 @@ test('POST /reservation-moves: more than 8 moves returns 422', async () => {
   await startServer(server, port);
   try {
     const token = await setupAuth(port, 'ada@example.com', 'correct horse');
-    const moves = [];
-    for (let i = 0; i < 9; i++) {
-      const r = await request(port, '/reservations', {
-        method: 'POST',
-        headers: { ...authHeaders(token), 'Idempotency-Key': 'm-' + i },
-        body: JSON.stringify({
-          restaurant_id: 'r_anker', table_id: 't1',
-          starts_at_local: `${DATE}T${10 + i}:00`, party_size: 2
-        })
-      });
-      moves.push({ reference: r.json().reference, starts_at_local: `${DATE}T${10 + i}:00` });
+    // Create 9 reservations at non-overlapping times across multiple tables
+    const refs = [];
+    const tables = ['t1', 't2', 't3'];
+    const times = ['10:00', '11:30', '13:00'];
+    let idx = 0;
+    for (const t of tables) {
+      for (const time of times) {
+        const r = await request(port, '/reservations', {
+          method: 'POST',
+          headers: { ...authHeaders(token), 'Idempotency-Key': `ninemoves-${idx}` },
+          body: JSON.stringify({
+            restaurant_id: 'r_anker', table_id: t,
+            starts_at_local: `${DATE}T${time}`, party_size: 2
+          })
+        });
+        assert.equal(r.status, 201, `create ${idx} failed: ${r.body}`);
+        refs.push(r.json().reference);
+        idx++;
+      }
     }
-    // Wait, this won't work — all at t1. Let me use different times.
-    // Actually, the 50-way test is better elsewhere.
+    // Try to move all 9 in one request (> 8 limit)
+    const moves = refs.map(r => ({ reference: r }));
+    const res = await request(port, '/reservation-moves', {
+      method: 'POST',
+      headers: { ...authHeaders(token), 'Idempotency-Key': 'ninemoves-bulk' },
+      body: JSON.stringify({ moves })
+    });
+    assert.equal(res.status, 422);
+    assert.equal(res.json().error.code, 'validation_failed');
   } finally {
     await stopServer(server);
   }

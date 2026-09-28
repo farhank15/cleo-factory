@@ -288,11 +288,11 @@ function makeApp(state) {
     }
 
     function handleCreateReservation(res, req, state, user, raw) {
-      let body;
-      try { body = parseBody(raw); } catch (e) { return sendError(res, e.code, e.status); }
       const key = req.headers['idempotency-key'];
       if (key === undefined || key === null || String(key) === '') return sendError(res, 'missing_idempotency_key', 400);
       if (typeof key !== 'string' || key.length > 255) return sendError(res, 'validation_failed', 422);
+      let body;
+      try { body = parseBody(raw); } catch (e) { return sendError(res, e.code, e.status); }
 
       const bodyCanon = canonical(JSON.parse(JSON.stringify(body)));
       const ikey = idemKey(user.id, 'POST /reservations', key);
@@ -309,11 +309,11 @@ function makeApp(state) {
     }
 
     function handleReservationMoves(res, req, state, user, raw) {
-      let body;
-      try { body = parseBody(raw); } catch (e) { return sendError(res, e.code, e.status); }
       const key = req.headers['idempotency-key'];
       if (key === undefined || key === null || String(key) === '') return sendError(res, 'missing_idempotency_key', 400);
       if (typeof key !== 'string' || key.length > 255) return sendError(res, 'validation_failed', 422);
+      let body;
+      try { body = parseBody(raw); } catch (e) { return sendError(res, e.code, e.status); }
 
       const bodyCanon = canonical(JSON.parse(JSON.stringify(body)));
       const ikey = idemKey(user.id, 'POST /reservation-moves', key);
