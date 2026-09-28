@@ -485,9 +485,7 @@ const JS = String.raw`(function() {
     const form = e.target;
     const ref = form.querySelector('[data-testid="lookup-reference-input"]').value.trim().toUpperCase();
     removeEl('[data-testid="reservation-error"]');
-    const detail = document.getElementById('reservation-detail');
-    detail.style.display = 'none';
-    detail.innerHTML = '';
+    removeEl('[data-testid="reservation-detail"]');
     removeEl('[data-testid="reservation-cancel-button"]');
 
     fetch('/reservations/' + encodeURIComponent(ref), { headers: authHeaders() })
@@ -519,7 +517,14 @@ const JS = String.raw`(function() {
   function showReservation(data) {
     removeEl('[data-testid="reservation-error"]');
     removeEl('[data-testid="reservation-cancel-button"]');
-    const detail = document.getElementById('reservation-detail');
+    let detail = document.getElementById('reservation-detail');
+    if (!detail) {
+      detail = document.createElement('div');
+      detail.id = 'reservation-detail';
+      detail.setAttribute('data-testid', 'reservation-detail');
+      detail.className = 'reservation-detail';
+      document.querySelector('main').appendChild(detail);
+    }
     detail.style.display = 'block';
 
     let tableText;
@@ -604,7 +609,7 @@ const JS = String.raw`(function() {
 const { State, ValidationError } = require('./state');
 
 function searchPage(state) {
-  const restaurants = (state && state.restaurants) || [];
+  const restaurants = (state && state.restaurants) ? Array.from(state.restaurants.values()) : [];
   let options = '';
   for (const r of restaurants) {
     options += `<option value="${escHtml(r.id)}">${escHtml(r.name)}</option>`;
@@ -733,7 +738,6 @@ function lookupPage() {
       </div>
       <button type="submit" data-testid="lookup-submit" class="btn-primary">Look up</button>
     </form>
-    <div id="reservation-detail" data-testid="reservation-detail" class="reservation-detail" style="display:none"></div>
   </main>
   <script>${JS}</script>
 </body>
