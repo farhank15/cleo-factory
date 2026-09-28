@@ -1,104 +1,98 @@
-# Tablekeeper Stage 1 — Architecture (cleo-architect)
+# Tablekeeper Stage 2 — Architecture Plan
 
 **Room:** `4cc3a8dc-ca47-4980-8c89-d7e7ba293ce1`
-**Output repo:** `band-work/result` → `stage-1/`
-**Authority:** `tablekeeper/spec/stage-1.md` + `tablekeeper/test/stage_1/*` (oracle: `CONTRACT_LEDGER.md`)
-**Design date:** derived before implementation is declared final (per Stage 0 plan: *Architect derives CONTRACT_LEDGER before code*).
+**Output repo:** `band-work/result` → `stage-2/`
+**Authority:** `stage-2/CONTRACT_LEDGER.md` (derived from `tablekeeper/spec/stage-2.md`)
 
-## Design summary
-A single-container, **zero runtime-dependency** Node.js HTTP service (built-in `http` + `crypto`).
-State is in-memory and is the **only** mutable surface; it is swapped atomically by the test
-control endpoints. The concurrency safety core is the **single-threaded event loop + an
-await-free allocation critical section** (L7): the idempotency lookup, the overlap check and
-the reservation/idempotency commit happen with no `await` between them, so under the 50-way
-`burst` barrier exactly one booking can ever win and 49 get `409 table_unavailable`, with
-zero 5xx.
+## Design Summary
 
-**Backend note (architect decision):** the time model can be realised two equivalent ways
-seen in the working tree — (a) Temporal (needs `node:22-alpine` + `NODE_OPTIONS=--harmony-temporal`)
-or (b) `Intl.DateTimeFormat` (no flag, but requires **full ICU tz data** in the Alpine image).
-Either satisfies §9; `docker` must ship the tzdata that the chosen approach reads. @cleo-forge
-picks the build. The oracle in L3/L8 is implementation-agnostic.
+Extend stage-1 server with HTML page generation and serving for interactive diner UI. All existing stage-1 APIs remain unchanged.
 
-## Component diagram
+## Architecture
+
+### Server Extension
+- Modify `app.js` to serve HTML pages from `public/` directory
+- Add `ui.js` with page generation functions: `searchPage()`, `signupPage()`, `loginPage()`, `lookupPage()`
+- Pages include inline CSS and JavaScript for zero-dependency offline operation
+
+### Combined Tables Support
+- `GET /availability` returns `available_options` with combinable pairs
+- `POST /reservations` accepts `table_ids: ["t_1", "t_2"]` array
+- Concurrency-safe table pair allocation via existing mutex
+
+### UI State Management
+- Out-of-order response handling: request counter prevents stale data overwrite
+- 5-second booking timeout → `booking-uncertain` message
+- Retry with same idempotency key preserves booking identity
+- 409 conflict → `booking-error` with grid refresh
+
+## Component Diagram
 ```mermaid
 graph TD
-  docker["docker<br/>Container: node:22-alpine<br/>0.0.0.0:${PORT:-8080}, no runtime deps"]
-  http["http_*<br/>Built-in http server + router<br/>public vs bearer-auth dispatch"]
-  tokens["tokens<br/>Bearer issuance+validate<br/>32B hex, non-expiring, multi-session"]
-  hasher["hasher<br/>scrypt password hashing<br/>+ timingSafeEqual"]
-  time["time<br/>IANA/DST: slot grid, spring-gap, fall-back first occurrence, absolute duration"]
-  mutex["mutex<br/>Await-free critical section:<br/>idemp-lookup → overlap-check → commit"]
-  store["store<br/>In-memory state:<br/>restaurants, tables, reservations, users, refs"]
-  idem["idem<br/>Per-user idempotency ledger<br/>(key, bodySig, status, response)"]
-  sent["sentinel<br/>Adversarial probes<br/>(50-way burst, replay loop, no-5xx, DST)"]
-
-  docker --> http
-  http -->|Authorization| tokens
-  http -->|signup/login| hasher
-  http -->|validate slots/DST/grid/hours| time
-  http -->|allocate & mutate| mutex
-  mutex -->|atomic check-then-reserve| store
-  mutex -->|receipt store/replay| idem
-  store -->|password_hash| hasher
-  store -->|token→user| tokens
-  http -->|test endpoints| store
-  sent -.->|drives| http
+    docker["Docker: node:22-alpine, --network none"]
+    http["HTTP: routes for /, /signup, /login, /lookup + API"]
+    ui["UI: searchPage, signupPage, loginPage, lookupPage"]
+    mutex["Mutex: same as Stage 1"]
+    store["Store: extended with combinable pairs"]
+    
+    docker --> http
+    http --> |HTML routes| ui
+    http --> |API| mutex
+    mutex --> store
 ```
 
-## Arch JSON (room diagram source, ```arch fence)
+## Arch JSON
+
 ```arch
 {
   "kind": "layered",
-  "title": "Tablekeeper Stage 1 — Architecture (cleo-architect)",
+  "title": "Tablekeeper Stage 2 — Architecture",
   "layers": [
     {"id": "delivery", "title": "Delivery", "items": [
-      {"id": "docker", "label": "Docker image (node:22-alpine): no runtime deps, 0.0.0.0:${PORT:-8080}"}
+      {"id": "docker", "label": "Docker image: node:22-alpine, --network none, 0.0.0.0:${PORT:-8080}"}
     ]},
-    {"id": "http_*", "title": "HTTP", "items": [
-      {"id": "http_*", "label": "Built-in http server + router; public vs bearer-auth dispatch; await-free handlers"}
+    {"id": "http_ui", "title": "HTTP UI", "items": [
+      {"id": "routes", "label": "Routes: /, /signup, /login, /lookup"}
     ]},
-    {"id": "auth", "title": "Auth & Security", "items": [
-      {"id": "tokens", "label": "Bearer token gen/validate (32B hex, non-expiring, multi-session)"},
-      {"id": "hasher", "label": "scrypt password hashing + timingSafeEqual"}
+    {"id": "http_api", "title": "HTTP API", "items": [
+      {"id": "availability_ext", "label": "GET /availability with available_options"},
+      {"id": "reservations_ext", "label": "POST /reservations table_ids extension"}
     ]},
-    {"id": "time", "title": "Time", "items": [
-      {"id": "time", "label": "IANA/DST resolver: slot grid, spring-gap rejection, fall-back first occurrence, absolute duration"}
+    {"id": "ui", "title": "UI", "items": [
+      {"id": "search", "label": "Search page with availability grid"},
+      {"id": "auth", "label": "Signup/login forms"},
+      {"id": "lookup", "label": "Reservation lookup"},
+      {"id": "booking", "label": "Booking form with retry logic"}
     ]},
     {"id": "core", "title": "Core", "items": [
-      {"id": "mutex", "label": "Await-free critical section: idempotency-lookup -> overlap-check -> commit"},
-      {"id": "idem", "label": "Per-user idempotency ledger (key, bodySig, status, response)"},
-      {"id": "store", "label": "In-memory state: restaurants/tables, reservations, users, used references"}
+      {"id": "mutex_2", "label": "Concurrency: await-free critical section"},
+      {"id": "store_2", "label": "State: restaurants, tables, combinable pairs"}
     ]},
     {"id": "verify", "title": "Verification", "items": [
-      {"id": "harness", "label": "harness run --track tablekeeper --repo <repo> --stage 1 --mode host|isolated"},
-      {"id": "node_tests", "label": "node --test test/ (stage-1/test)"},
-      {"id": "sentinel", "label": "cleo-sentinel: 50-way burst, idempotency replay, no-5xx, DST probes"}
+      {"id": "harness_2", "label": "harness run --stage 2 --mode isolated"},
+      {"id": "ui_tests", "label": "Node tests: UI forms, concurrency, offline"}
     ]}
   ],
   "flows": [
-    {"from": "docker", "to": "http_*", "label": "serve HTTP"},
-    {"from": "http_*", "to": "auth", "label": "bearer/parse"},
-    {"from": "http_*", "to": "time", "label": "validate DST/slots"},
-    {"from": "http_*", "to": "core", "label": "allocate & mutate"},
+    {"from": "docker", "to": "http_ui", "label": "serve HTML pages"},
+    {"from": "docker", "to": "http_api", "label": "serve JSON API"},
+    {"from": "http_ui", "to": "ui", "label": "render pages"},
+    {"from": "http_api", "to": "core", "label": "allocate & mutate"},
     {"from": "core", "to": "verify", "label": "grader drives"}
   ]
 }
 ```
 
-## Mapping: ledger → components
-- **L1 (networking/process)**: `docker`
-- **L2 (conventions)**: `store` (ID generation, opaque IDs)
-- **L4 (auth)**: `tokens`, `hasher`
-- **L8 (time/DST)**: `time`
-- **L5 (idempotency)**: `idem`
-- **L6/L9 (endpoints + state lifecycle)**: `store`, `http_*`
-- **L7 (concurrency)**: `mutex` (the await-free critical section inside `http_*` over `store`+`idem`)
+## Deliverables for @cleo-forge
+- `stage-2/index.html`, `signup.html`, `login.html`, `lookup.html` in `public/`
+- Updated `src/app.js` with HTML route handlers
+- `src/ui.js` page generation functions
+- Test suite in `stage-2/test/`
+- Updated `Dockerfile` (still zero-dependency, offline)
+- `RUN.md` updated for stage-2
 
-## Verification contract for @cleo-forge
-Implement so that `harnes check --track tablekeeper .` reports **0 problems** and
-`harness run --track tablekeeper --repo . --stage 1 --mode host|isolated` passes every
-`test/stage_1/*`, including the 50-way `burst` (exactly one 201 + 49×409, zero 5xx), the
-idempotency replay loop, and the Berlin/NY DST transitions. Deliverables due from forge:
-`stage-1/Dockerfile`, `stage-1/RUN.md`, `stage-1/test/**`, and the reconciled single
-implementation (delete the other of the two parallel trees currently in `src/`).
+## Stage 1 Reference
+- Completed at `30916c9` with tags `accept-stage-1`, `stage-1-accepted`
+- Zero-dependency in-memory reservation service
+- 120/120 harness tests pass
+- Adversarial probes verified (50-way concurrency, idempotency, DST)

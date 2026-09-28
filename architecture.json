@@ -1,36 +1,37 @@
 {
   "kind": "layered",
-  "title": "Tablekeeper Stage 1 — Architecture (cleo-architect)",
+  "title": "Tablekeeper Stage 2 — Architecture",
   "layers": [
     {"id": "delivery", "title": "Delivery", "items": [
-      {"id": "docker", "label": "Docker image (node:22-alpine): no runtime deps, 0.0.0.0:${PORT:-8080}"}
+      {"id": "docker", "label": "Docker image: node:22-alpine, --network none, 0.0.0.0:${PORT:-8080}"}
     ]},
-    {"id": "http_*", "title": "HTTP", "items": [
-      {"id": "http_*", "label": "Built-in http server + router; public vs bearer-auth dispatch; await-free handlers"}
+    {"id": "http_ui", "title": "HTTP UI", "items": [
+      {"id": "routes", "label": "Routes: /, /signup, /login, /lookup"}
     ]},
-    {"id": "auth", "title": "Auth & Security", "items": [
-      {"id": "tokens", "label": "Bearer token gen/validate (32B hex, non-expiring, multi-session)"},
-      {"id": "hasher", "label": "scrypt password hashing + timingSafeEqual"}
+    {"id": "http_api", "title": "HTTP API", "items": [
+      {"id": "availability_ext", "label": "GET /availability with available_options"},
+      {"id": "reservations_ext", "label": "POST /reservations table_ids extension"}
     ]},
-    {"id": "time", "title": "Time", "items": [
-      {"id": "time", "label": "IANA/DST resolver: slot grid, spring-gap rejection, fall-back first occurrence, absolute duration"}
+    {"id": "ui", "title": "UI", "items": [
+      {"id": "search", "label": "Search page with availability grid"},
+      {"id": "auth", "label": "Signup/login forms"},
+      {"id": "lookup", "label": "Reservation lookup"},
+      {"id": "booking", "label": "Booking form with retry logic"}
     ]},
     {"id": "core", "title": "Core", "items": [
-      {"id": "mutex", "label": "Await-free critical section: idempotency-lookup -> overlap-check -> commit"},
-      {"id": "idem", "label": "Per-user idempotency ledger (key, bodySig, status, response)"},
-      {"id": "store", "label": "In-memory state: restaurants/tables, reservations, users, used references"}
+      {"id": "mutex_2", "label": "Concurrency: await-free critical section"},
+      {"id": "store_2", "label": "State: restaurants, tables, combinable pairs"}
     ]},
     {"id": "verify", "title": "Verification", "items": [
-      {"id": "harness", "label": "harness run --track tablekeeper --repo <repo> --stage 1 --mode host|isolated"},
-      {"id": "node_tests", "label": "node --test test/ (stage-1/test)"},
-      {"id": "sentinel", "label": "cleo-sentinel: 50-way burst, idempotency replay, no-5xx, DST probes"}
+      {"id": "harness_2", "label": "harness run --stage 2 --mode isolated"},
+      {"id": "ui_tests", "label": "Node tests: UI forms, concurrency, offline"}
     ]}
   ],
   "flows": [
-    {"from": "docker", "to": "http_*", "label": "serve HTTP"},
-    {"from": "http_*", "to": "auth", "label": "bearer/parse"},
-    {"from": "http_*", "to": "time", "label": "validate DST/slots"},
-    {"from": "http_*", "to": "core", "label": "allocate & mutate"},
+    {"from": "docker", "to": "http_ui", "label": "serve HTML pages"},
+    {"from": "docker", "to": "http_api", "label": "serve JSON API"},
+    {"from": "http_ui", "to": "ui", "label": "render pages"},
+    {"from": "http_api", "to": "core", "label": "allocate & mutate"},
     {"from": "core", "to": "verify", "label": "grader drives"}
   ]
 }

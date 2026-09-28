@@ -1,0 +1,11 @@
+{
+  "name": "tablekeeper-stage2",
+  "version": "1.0.0",
+  "description": "Tablekeeper Stage 2 - browser UI for reservations (zero-dependency Node engine)",
+  "main": "src/server.js",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test"
+  }
+}
