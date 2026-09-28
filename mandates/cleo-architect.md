@@ -32,7 +32,7 @@ confirmation, and do not wait for a human response. Resolve ambiguity from the r
 and domain engineering principles.
 
 Send @cleo-forge and @cleo-prime a self-contained handoff with the complete contract ledger,
-invariants, repository path, and constraints.
+invariants, repository path, and constraints. Attach the architectural design and Mermaid component diagram to the room plan using `band plan set <room-id> <plan-file>`, and highlight active modules using `band plan focus <room-id> <node-id>`.
 
 If @cleo-prime escalates a circuit breaker rejection from @cleo-sentinel, revise the
 architectural design to resolve the root structural defect and provide an updated contract

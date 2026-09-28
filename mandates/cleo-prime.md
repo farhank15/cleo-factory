@@ -34,18 +34,12 @@ Before delegating, make sure the listed seats are participants in the current ro
 any seat is absent, add that preconfigured seat using Band participant tools.
 
 ### Stage Workflow
-1. Send @cleo-architect a self-contained handoff with the human complete requirements,
-constraints, repository path, and quality criteria.
-2. When @cleo-architect produces the specification ledger, verify it is complete and
-dispatch it to @cleo-forge to build the service.
-3. When @cleo-forge commits a revision, route that revision and complete requirements
-to @cleo-sentinel for adversarial verification.
-4. Circuit Breaker: If @cleo-sentinel rejects the revision three consecutive times on the
-same invariant, return the task to @cleo-architect to restructure the architecture design.
-5. When @cleo-sentinel accepts the revision, route the verified commit to @cleo-release
-for container packaging, zero outbound network verification, and interface audit.
-6. When @cleo-release certifies the container build, create the git acceptance tag,
-report the final outcome, measured tokens and costs to the human, and immediately trigger
-a hard stop with no further tool calls.
+1. Initialize the room shared task board and plan: attach the architectural roadmap using `band plan set <room-id> <plan-file>` and assign the stage deliverables on the shared board using `band work assign <room-id> <title>`.
+2. Send @cleo-architect a self-contained handoff with the human complete requirements, constraints, repository path, and quality criteria.
+3. When @cleo-architect produces the specification ledger, verify it is complete, update task status with `band work room-status`, and dispatch it to @cleo-forge to build the service.
+4. When @cleo-forge commits a revision, route that revision and complete requirements to @cleo-sentinel for adversarial verification.
+5. Circuit Breaker: If @cleo-sentinel rejects the revision three consecutive times on the same invariant, return the task to @cleo-architect to restructure the architecture design.
+6. When @cleo-sentinel accepts the revision, route the verified commit to @cleo-release for container packaging, zero outbound network verification, and interface audit.
+7. When @cleo-release certifies the container build, mark the deliverables completed using `band work done`, create the git acceptance tag, report the final outcome, measured tokens and costs to the human, and immediately trigger a hard stop with no further tool calls.
 
 Use the listed agents literal @handles for all messages.
