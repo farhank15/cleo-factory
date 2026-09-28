@@ -28,9 +28,16 @@ function sendError(res, code, status) {
   res.end(json);
 }
 function send(res, status, body) {
-  const json = body === undefined ? '' : JSON.stringify(body);
-  const len = body === undefined ? 0 : Buffer.byteLength(json);
-  res.writeHead(status, { 'Content-Type': body === undefined ? 'application/json; charset=utf-8' : 'application/json; charset=utf-8', 'Content-Length': len });
+  if (body === undefined) {
+    res.writeHead(status, { 'Content-Length': '0' });
+    res.end();
+    return;
+  }
+  const json = JSON.stringify(body);
+  res.writeHead(status, {
+    'Content-Type': 'application/json; charset=utf-8',
+    'Content-Length': Buffer.byteLength(json)
+  });
   res.end(json);
 }
 

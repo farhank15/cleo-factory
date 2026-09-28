@@ -1,13 +1,12 @@
-FROM node:22-bookworm-slim
+FROM node:22-slim
 
 WORKDIR /app
 
-# Stage 1 is a zero-dependency service: only Node built-ins are used at runtime,
-# so there is nothing to install and the image has no network requirement.
-COPY package.json ./
-COPY src/ ./src/
+COPY src/ src/
+COPY package.json .
 
-ENV PORT=8080
+USER node
+
 EXPOSE 8080
 
-CMD ["node", "src/app.js"]
+CMD ["node", "src/server.js"]
