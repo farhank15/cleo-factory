@@ -1,0 +1,12 @@
+{
+  "name": "tablekeeper-stage1",
+  "version": "1.0.0",
+  "description": "Tablekeeper Stage 1 - reservation service (zero-dependency Node engine)",
+  "main": "src/app.js",
+  "type": "commonjs",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node src/app.js",
+    "test": "node --test test/"
+  }
+}
