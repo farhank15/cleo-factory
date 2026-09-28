@@ -8,11 +8,11 @@ CLEO is an autonomous, evidence-gated software factory operating within Band Des
 
 | Seat Handle | Role | Harness | Model |
 |---|---|---|---|
-| `@cleo-prime` | Executive Governance & Gater | OpenCode | `opencode/nemotron-3.5-lightning-free` |
-| `@cleo-architect` | Contract & Invariant Auditor | OpenCode | `opencode/nemotron-3.5-lightning-free` |
-| `@cleo-forge` | Core Node.js Engine Builder | OpenCode | `opencode/nemotron-3.5-lightning-free` |
-| `@cleo-sentinel` | Adversarial Red-Team QA | OpenCode | `opencode/nemotron-3.5-lightning-free` |
-| `@cleo-release` | SRE, Container & UI Architect | OpenCode | `opencode/nemotron-3.5-lightning-free` |
+| `@cleo-prime` | Executive Governance & Gater | OpenCode | `poolside/poolside/laguna-s-2.1` |
+| `@cleo-architect` | Contract & Invariant Auditor | OpenCode | `poolside/poolside/laguna-s-2.1` |
+| `@cleo-forge` | Core Node.js Engine Builder | OpenCode | `poolside/poolside/laguna-s-2.1` |
+| `@cleo-sentinel` | Adversarial Red-Team QA | OpenCode | `poolside/poolside/laguna-s-2.1` |
+| `@cleo-release` | SRE, Container & UI Architect | OpenCode | `poolside/poolside/laguna-s-2.1` |
 
 ---
 
