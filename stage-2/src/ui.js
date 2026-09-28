@@ -98,11 +98,6 @@ const JS = String.raw`(function() {
       c === '&' ? '&amp;' : c === '<' ? '&lt;' : c === '>' ? '&gt;' :
       c === '"' ? '&quot;' : '&#39;');
   }
-  function escHtml(s) {
-    return String(s).replace(/[&<>"']/g, c =>
-      c === '&' ? '&amp;' : c === '<' ? '&lt;' : c === '>' ? '&gt;' :
-      c === '"' ? '&quot;' : '&#39;');
-  }
 
   const TK_TOKEN = 'tablekeeper_token';
   const TK_NAME = 'tablekeeper_display_name';
