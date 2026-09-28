@@ -21,6 +21,7 @@ const FIXTURE = {
         { id: 't2', label: 'Tisch 2', capacity: 2 },
         { id: 't3', label: 'Tisch 3', capacity: 6 }
       ],
+      combinable: [['t1', 't2']],
       opening_hours: [
         { weekday: 'mon', opens: '10:00', closes: '22:00' },
         { weekday: 'tue', opens: '10:00', closes: '22:00' },

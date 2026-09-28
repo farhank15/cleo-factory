@@ -2,36 +2,201 @@
   "kind": "layered",
   "title": "Tablekeeper Stage 2 — Architecture",
   "layers": [
-    {"id": "delivery", "title": "Delivery", "items": [
-      {"id": "docker", "label": "Docker image: node:22-alpine, --network none, 0.0.0.0:${PORT:-8080}"}
-    ]},
-    {"id": "http_ui", "title": "HTTP UI", "items": [
-      {"id": "routes", "label": "Routes: /, /signup, /login, /lookup"}
-    ]},
-    {"id": "http_api", "title": "HTTP API", "items": [
-      {"id": "availability_ext", "label": "GET /availability with available_options"},
-      {"id": "reservations_ext", "label": "POST /reservations table_ids extension"}
-    ]},
-    {"id": "ui", "title": "UI", "items": [
-      {"id": "search", "label": "Search page with availability grid"},
-      {"id": "auth", "label": "Signup/login forms"},
-      {"id": "lookup", "label": "Reservation lookup"},
-      {"id": "booking", "label": "Booking form with retry logic"}
-    ]},
-    {"id": "core", "title": "Core", "items": [
-      {"id": "mutex_2", "label": "Concurrency: await-free critical section"},
-      {"id": "store_2", "label": "State: restaurants, tables, combinable pairs"}
-    ]},
-    {"id": "verify", "title": "Verification", "items": [
-      {"id": "harness_2", "label": "harness run --stage 2 --mode isolated"},
-      {"id": "ui_tests", "label": "Node tests: UI forms, concurrency, offline"}
-    ]}
+    {
+      "id": "delivery",
+      "title": "Delivery",
+      "items": [
+        {
+          "id": "docker",
+          "label": "Docker: node:22-alpine, --network none, 0.0.0.0:${PORT:-8080}",
+          "details": {
+            "port": 8080,
+            "network": "none",
+            "runtime": "node:22-alpine"
+          }
+        }
+      ]
+    },
+    {
+      "id": "http_ui",
+      "title": "HTTP UI Routes",
+      "items": [
+        {
+          "id": "route_search",
+          "label": "Route: / (search page)",
+          "methods": ["GET"],
+          "response": "text/html; charset=utf-8"
+        },
+        {
+          "id": "route_signup",
+          "label": "Route: /signup",
+          "methods": ["GET"],
+          "response": "text/html; charset=utf-8"
+        },
+        {
+          "id": "route_login",
+          "label": "Route: /login",
+          "methods": ["GET"],
+          "response": "text/html; charset=utf-8"
+        },
+        {
+          "id": "route_lookup",
+          "label": "Route: /lookup",
+          "methods": ["GET"],
+          "response": "text/html; charset=utf-8"
+        }
+      ]
+    },
+    {
+      "id": "http_api",
+      "title": "HTTP API Routes",
+      "items": [
+        {
+          "id": "api_health",
+          "label": "GET /health",
+          "status": 200
+        },
+        {
+          "id": "api_reset",
+          "label": "POST /_test/reset",
+          "status": 204
+        },
+        {
+          "id": "api_export",
+          "label": "GET /_test/export",
+          "status": 200
+        },
+        {
+          "id": "api_import",
+          "label": "POST /_test/import",
+          "status": 204
+        },
+        {
+          "id": "api_availability",
+          "label": "GET /availability (with available_options)",
+          "status": 200
+        },
+        {
+          "id": "api_reservations",
+          "label": "POST /reservations (table_ids extension)",
+          "status": 201
+        },
+        {
+          "id": "api_reservation_moves",
+          "label": "POST /reservation-moves",
+          "status": 201
+        }
+      ]
+    },
+    {
+      "id": "ui",
+      "title": "UI Components",
+      "items": [
+        {
+          "id": "ui_search",
+          "label": "Search page with availability grid",
+          "dataTestId": "availability-grid"
+        },
+        {
+          "id": "ui_auth",
+          "label": "Signup/login forms",
+          "dataTestId": "signup-form, login-form"
+        },
+        {
+          "id": "ui_lookup",
+          "label": "Reservation lookup",
+          "dataTestId": "lookup-form"
+        },
+        {
+          "id": "ui_booking",
+          "label": "Booking form with retry logic",
+          "dataTestId": "booking-form"
+        }
+      ]
+    },
+    {
+      "id": "core",
+      "title": "Core Engine",
+      "items": [
+        {
+          "id": "mutex",
+          "label": "Concurrency: await-free critical section"
+        },
+        {
+          "id": "state",
+          "label": "State: restaurants, tables, combinable pairs, reservations",
+          "dataStructures": ["Map(users)", "Map(tokens)", "Map(restaurants)", "Map(tables)", "Map(reservations)", "Map(idem)", "Set(references)"]
+        },
+        {
+          "id": "combinable_model",
+          "label": "Combined Tables Model",
+          "rules": ["Pairs only (max 2 tables)", "Non-transitive", "Capacity = sum"]
+        }
+      ]
+    },
+    {
+      "id": "security",
+      "title": "Security & Auth",
+      "items": [
+        {
+          "id": "auth_passwords",
+          "label": "scrypt password hashing"
+        },
+        {
+          "id": "auth_tokens",
+          "label": "32 random bytes hex tokens"
+        },
+        {
+          "id": "auth_public_routes",
+          "label": "Public routes: /, /signup, /login, /lookup, /health, /availability"
+        }
+      ]
+    },
+    {
+      "id": "verify",
+      "title": "Verification",
+      "items": [
+        {
+          "id": "harness",
+          "label": "harness run --stage 2 --mode isolated"
+        },
+        {
+          "id": "ui_tests",
+          "label": "Node tests: UI forms, concurrency, offline"
+        }
+      ]
+    }
   ],
   "flows": [
-    {"from": "docker", "to": "http_ui", "label": "serve HTML pages"},
-    {"from": "docker", "to": "http_api", "label": "serve JSON API"},
-    {"from": "http_ui", "to": "ui", "label": "render pages"},
-    {"from": "http_api", "to": "core", "label": "allocate & mutate"},
-    {"from": "core", "to": "verify", "label": "grader drives"}
+    {
+      "from": "docker",
+      "to": "http_ui",
+      "label": "serve HTML pages"
+    },
+    {
+      "from": "docker",
+      "to": "http_api",
+      "label": "serve JSON API"
+    },
+    {
+      "from": "http_ui",
+      "to": "ui",
+      "label": "render pages"
+    },
+    {
+      "from": "http_api",
+      "to": "core",
+      "label": "allocate & mutate"
+    },
+    {
+      "from": "http_api",
+      "to": "security",
+      "label": "authenticate tokens"
+    },
+    {
+      "from": "core",
+      "to": "verify",
+      "label": "grader drives tests"
+    }
   ]
 }
