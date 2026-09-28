@@ -1,69 +1,111 @@
 {
   "kind": "layered",
-  "title": "Tablekeeper Dark Factory — Service Architecture",
+  "title": "Tablekeeper Stage 1 Architecture",
   "layers": [
     {
-      "id": "browser",
-      "title": "Browser Client (Stage 2+)",
+      "id": "entry",
+      "title": "Container Entry",
       "items": [
-        { "id": "ui_auth", "label": "Signup / Login screens" },
-        { "id": "ui_search", "label": "Search & availability grid" },
-        { "id": "ui_booking", "label": "Booking form & confirmation" },
-        { "id": "ui_lookup", "label": "Reservation lookup" }
+        {
+          "id": "dockerfile",
+          "label": "Dockerfile (node:22-slim)"
+        },
+        {
+          "id": "entrypoint",
+          "label": "node src/server.js (PORT 0.0.0.0:8080)"
+        }
       ]
     },
     {
       "id": "http",
-      "title": "HTTP Service (Node.js, Express)",
+      "title": "HTTP Layer",
       "items": [
-        { "id": "http_health", "label": "GET /health" },
-        { "id": "http_testing", "label": "POST /_test/reset | export | import" },
-        { "id": "http_auth", "label": "POST /auth/signup | /auth/login" },
-        { "id": "http_restaurants", "label": "GET /restaurants | /restaurants/{id}" },
-        { "id": "http_availability", "label": "GET /availability (slots + DST)" },
-        { "id": "http_reservations", "label": "POST /reservations | GET | PATCH | cancel" },
-        { "id": "http_moves", "label": "POST /reservation-moves (atomic batch)" },
-        { "id": "http_policies", "label": "POST/GET /restaurants/{id}/policies" },
-        { "id": "http_decision", "label": "GET /reservations/{ref}/decision" },
-        { "id": "http_history", "label": "GET /reservations/{ref}/history" },
-        { "id": "http_series", "label": "POST /series | GET /series/{id} | /amend" },
-        { "id": "http_replans", "label": "POST /restaurants/{id}/replans | apply" }
+        {
+          "id": "express",
+          "label": "Express app + express.json()"
+        },
+        {
+          "id": "router",
+          "label": "Route dispatch (sync handlers)"
+        }
       ]
     },
     {
-      "id": "engine",
-      "title": "Booking Engine",
+      "id": "api",
+      "title": "API Surface",
       "items": [
-        { "id": "mutex", "label": "Concurrency mutex (single event-loop transaction)" },
-        { "id": "idem", "label": "Idempotency cache (per-user keyed)" },
-        { "id": "grid", "label": "Slot grid + DST/IANA resolver (Luxon)" },
-        { "id": "validate", "label": "Request validation & error contracts" },
-        { "id": "history", "label": "Reservation history & revision log" }
+        {
+          "id": "health_route",
+          "label": "GET /health"
+        },
+        {
+          "id": "auth_routes",
+          "label": "POST /auth/signup, POST /auth/login"
+        },
+        {
+          "id": "restaurant_routes",
+          "label": "GET /restaurants, GET /restaurants/{id}"
+        },
+        {
+          "id": "availability_route",
+          "label": "GET /availability"
+        },
+        {
+          "id": "reservation_routes",
+          "label": "POST/GET/PATCH/CANCEL /reservations"
+        },
+        {
+          "id": "moves_route",
+          "label": "POST /reservation-moves"
+        },
+        {
+          "id": "test_routes",
+          "label": "POST /_test/reset, GET /_test/export, POST /_test/import"
+        }
       ]
     },
     {
-      "id": "state",
-      "title": "In-Memory State Store",
+      "id": "core",
+      "title": "Business Logic",
       "items": [
-        { "id": "store", "label": "Restaurants, tables, users, reservations" },
-        { "id": "hasher", "label": "Password hashing (bcrypt/Argon2)" },
-        { "id": "tokens", "label": "Bearer tokens (non-expiring)" }
-      ]
-    },
-    {
-      "id": "runtime",
-      "title": "Runtime Container (Zero Outbound)",
-      "items": [
-        { "id": "docker", "label": "Dockerfile — all deps in image, no runtime network" },
-        { "id": "port_env", "label": "0.0.0.0 + PORT env (default 8080)" },
-        { "id": "limits", "label": "2 vCPU / 2 GiB, <60s startup, 50 concurrent" }
+        {
+          "id": "storage",
+          "label": "In-memory store (sync)"
+        },
+        {
+          "id": "auth_logic",
+          "label": "Auth: scrypt hash, token store"
+        },
+        {
+          "id": "time_logic",
+          "label": "DST-aware time resolver"
+        },
+        {
+          "id": "idempotency_logic",
+          "label": "Idempotency key ledger"
+        },
+        {
+          "id": "reservation_logic",
+          "label": "Booking, cancel, amend, moves"
+        }
       ]
     }
   ],
   "flows": [
-    { "from": "browser", "to": "http", "label": "HTTP / JSON over PORT" },
-    { "from": "http", "to": "engine", "label": "synchronous in-process" },
-    { "from": "engine", "to": "state", "label": "read / write state" },
-    { "from": "http", "to": "runtime", "label": "listen on PORT" }
+    {
+      "from": "entry",
+      "to": "http",
+      "label": "HTTP request"
+    },
+    {
+      "from": "http",
+      "to": "api",
+      "label": "JSON"
+    },
+    {
+      "from": "api",
+      "to": "core",
+      "label": "business rules"
+    }
   ]
 }
